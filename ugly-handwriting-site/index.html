@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ugly Handwriting Generator: turn typed text into messy handwriting</title>
+<meta name="description" content="Turn typed text into believable human handwriting. Choose a pen, a paper and how messy it gets, then export a PDF or PNG.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Caveat&family=Covered+By+Your+Grace&family=Dancing+Script&family=Homemade+Apple&family=Kalam&family=La+Belle+Aurore&family=Patrick+Hand&family=Gochi+Hand&family=Nanum+Pen+Script&family=Reenie+Beanie&family=Rock+Salt&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e3e8ed;--surface:#f7f8fa;--sunk:#d5dce3;--text:#18222d;--muted:#52606d;--line:#c3ccd5;--accent:#27428f;--accent-text:#fff;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#12161b;--surface:#1b2128;--sunk:#0e1115;--text:#e6ebf0;--muted:#9aa6b3;--line:#333f4a;--accent:#8aa4ee;--accent-text:#10172b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161b;--surface:#1b2128;--sunk:#0e1115;--text:#e6ebf0;--muted:#9aa6b3;--line:#333f4a;--accent:#8aa4ee;--accent-text:#10172b;color-scheme:dark}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 76px)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--surface);z-index:30}
+a{color:inherit}
+.in{max-width:1240px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-right,0px)) 0 max(20px,env(safe-area-inset-left,0px))}
+h1,h2,h3{margin:0;line-height:1.15;letter-spacing:-.015em}
+h2{font-size:clamp(26px,3.4vw,38px);font-weight:700}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .in{display:flex;align-items:center;gap:20px;height:60px}
+.brand{font:400 17px/1 "Rock Salt","Caveat",cursive;color:var(--accent);text-decoration:none;margin-right:auto}
+.top nav{display:flex;align-items:center;gap:22px;font-size:14px;font-weight:600}
+.top nav a{text-decoration:none;color:var(--muted)}
+.top nav a:hover{color:var(--text)}
+@media(max-width:720px){.top nav a{display:none}.top nav a.cta-s{display:inline-block}}
+.btn{display:inline-block;font:inherit;font-weight:600;font-size:15px;text-align:center;text-decoration:none;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+.btn.main{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.btn:disabled{opacity:.6;cursor:progress}
+.btn.sm{padding:7px 11px;font-size:13px}
+.btn:focus-visible,.inks button:focus-visible,.tabs button:focus-visible,.chip:focus-visible,.seg button:focus-visible,summary:focus-visible,a:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top .btn{padding:7px 12px;font-size:13px}
+.hero{padding:56px 0 40px}
+.hero .in{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:48px;align-items:center}
+@media(max-width:900px){.hero .in{grid-template-columns:minmax(0,1fr);gap:28px}.hero{padding-top:32px}}
+.nb{--ln:clamp(46px,7vw,68px);position:relative;border-radius:4px;box-shadow:0 2px 16px rgba(0,0,0,.25);padding:var(--ln) 20px calc(var(--ln)*.5) clamp(44px,8vw,84px);
+background:#f6f6f2 repeating-linear-gradient(to bottom,transparent 0 calc(var(--ln) - 1px),rgba(70,110,200,.42) 0 var(--ln))}
+.nb::before{content:"";position:absolute;inset:0 auto 0 clamp(34px,6.5vw,66px);width:1px;background:rgba(200,60,60,.55)}
+.nb h1{font:400 calc(var(--ln)*.55)/var(--ln) "Rock Salt","Caveat",cursive;color:#1d3f9e;letter-spacing:0}
+.nb h1 span{display:block}
+.nb h1 span+span{transform:rotate(-1.2deg);transform-origin:left center}
+@media(prefers-reduced-motion:no-preference){.nb h1 span{animation:wr 1.3s steps(24) both}.nb h1 span+span{animation-delay:1.2s}}
+@keyframes wr{from{clip-path:inset(-12px 100% -12px 0)}to{clip-path:inset(-12px 0 -12px 0)}}
+.lede{font-size:18px;color:var(--muted);margin:0 0 22px;max-width:46ch}
+.cta{display:flex;gap:10px;flex-wrap:wrap}
+.sec{padding:64px 0}
+.sec.alt{background:var(--surface);border-block:1px solid var(--line)}
+.sub{color:var(--muted);margin:10px 0 0;max-width:56ch}
+.studio-grid{display:grid;grid-template-columns:390px minmax(0,1fr);gap:20px;align-items:start;margin-top:28px}
+@media(max-width:960px){.studio-grid{grid-template-columns:minmax(0,1fr)}.studio-grid[data-view=settings] #preview,.studio-grid[data-view=preview] .panel{display:none}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+@media(min-width:961px){.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);max-height:calc(100dvh - 96px);overflow:auto}}
+.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;background:var(--surface);position:sticky;top:0;z-index:1}
+.tabs button{flex:1 0 auto;font:inherit;font-size:14px;font-weight:600;padding:13px 14px;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent)}
+.tp{padding:18px;display:grid;gap:16px;align-content:start;min-height:340px}
+label{display:grid;gap:5px;font-weight:600;font-size:13px}
+label span b{float:right;font-weight:400;color:var(--muted)}
+textarea,select{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px}
+textarea{min-height:250px;resize:vertical;line-height:1.5}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.lbl{font-weight:600;font-size:13px;margin:0 0 6px}
+.inks{display:flex;gap:8px;flex-wrap:wrap}
+.inks button{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.inks button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;padding:8px 2px;background:var(--bg);color:var(--text);border:0;border-right:1px solid var(--line);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-text)}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{display:flex;align-items:center;gap:9px;font:inherit;font-size:13px;font-weight:600;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
+.chip i{flex:none;width:22px;height:28px;border-radius:2px;border:1px solid rgba(0,0,0,.25)}
+.chip[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row{display:flex;gap:8px}.row .btn{flex:1}
+.chk{display:flex;align-items:center;gap:8px}
+.note{font-size:13px;color:var(--muted);margin:0}
+.foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center}
+.jump{display:none;font-size:13px;font-weight:600;white-space:nowrap}
+@media(max-width:960px){.jump{display:inline}}
+.bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 68px);z-index:5;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;margin-bottom:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.bar label{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}
+.bar input[type=range]{width:90px}
+.bar label b{font-weight:400;color:var(--muted);min-width:24px}
+.pc{margin-left:auto;font-size:13px;color:var(--muted)}
+.stage{display:grid;gap:6px;background:var(--sunk);border-radius:12px;padding:20px;overflow:auto;max-width:100%}
+canvas{display:block;width:100%;height:auto;border-radius:3px;box-shadow:0 2px 14px rgba(0,0,0,.3)}
+.cap{font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px}
+.feat{display:grid;grid-template-columns:1fr 2fr;gap:48px}
+@media(max-width:900px){.feat{grid-template-columns:1fr;gap:24px}}
+dl{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+@media(max-width:640px){dl{grid-template-columns:1fr}}
+dl div{border-top:1px solid var(--line);padding:18px 0 24px}
+dt{font-weight:700;font-size:17px;margin-bottom:4px}
+dd{margin:0;color:var(--muted)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:32px;padding:0;list-style:none}
+@media(max-width:800px){.steps{grid-template-columns:1fr;gap:24px}}
+.steps b{display:block;font:400 34px/1 "Rock Salt","Caveat",cursive;color:var(--accent);margin-bottom:12px}
+.steps h3{font-size:19px;margin-bottom:6px}
+.steps p{margin:0;color:var(--muted)}
+.faq{max-width:760px;margin-top:24px}
+details{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600;padding:16px 28px 16px 0;list-style:none;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:4px;top:13px;font-size:22px;font-weight:400;color:var(--muted)}
+details[open] summary::after{content:"\2212"}
+details p{margin:0 0 18px;color:var(--muted);max-width:62ch}
+footer{padding:36px 0 48px;color:var(--muted);font-size:14px}
+footer .in{display:flex;gap:16px 32px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+html{-webkit-text-size-adjust:100%}
+button,.btn,summary{touch-action:manipulation}
+.bar label{flex:1 1 150px}
+.vsw{display:none;position:fixed;left:0;right:0;bottom:0;z-index:25;grid-template-columns:1fr 1fr;gap:8px;padding:8px max(12px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:var(--surface);border-top:1px solid var(--line)}
+.vsw button{padding:12px 8px;font-size:15px}
+.vsw button[aria-pressed=true]{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+@media(max-width:960px){.vsw:not([hidden]){display:grid}footer{padding-bottom:96px}}
+@media(max-width:720px){.top .in{gap:12px;height:56px}.brand{font-size:14px}.cta-s{display:none!important}.sec{padding:40px 0}.hero{padding:24px 0 28px}.stage{padding:8px;border-radius:10px}.tp{padding:16px;min-height:0}.inks button{width:38px;height:38px}.tabs button{padding:14px 15px}.chip{padding:10px}.bar{top:calc(env(safe-area-inset-top,0px) + 64px)}.lede{font-size:17px}textarea{min-height:200px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+<a class="brand" href="#top">Ugly Handwriting</a>
+<nav aria-label="Main"><a href="#studio">Studio</a><a href="#features">Features</a><a href="#how">How it works</a><a href="#faq">FAQ</a><button class="btn" id="theme" type="button" aria-label="Switch between light and dark theme">Theme</button><a class="btn main cta-s" href="#studio">Open studio</a></nav>
+</div></header>
+
+<main>
+<section class="hero" id="top"><div class="in">
+<div class="nb"><h1><span>Type it neat.</span><span>Get it back ugly.</span></h1></div>
+<div>
+<p class="lede">Turn any text into a page of believable human handwriting. Choose the pen, the paper and how messy it gets, then watch it being written or export it.</p>
+<div class="cta"><a class="btn main" href="#studio">Open the studio</a><a class="btn" href="#how">How it works</a></div>
+</div>
+</div></section>
+
+<section class="sec" id="studio"><div class="in">
+<h2>Studio</h2>
+<p class="sub">Settings are grouped into tabs. Every change redraws the pages on the right.</p>
+<div class="studio-grid" id="sg" data-view="settings">
+<div class="panel">
+<div class="tabs" role="tablist" aria-label="Settings groups">
+<button role="tab" id="t-text" aria-controls="p-text" type="button">Text</button>
+<button role="tab" id="t-hand" aria-controls="p-hand" type="button">Writing</button>
+<button role="tab" id="t-paper" aria-controls="p-paper" type="button">Paper</button>
+<button role="tab" id="t-page" aria-controls="p-page" type="button">Page</button>
+<button role="tab" id="t-out" aria-controls="p-out" type="button">Export</button>
+</div>
+
+<div class="tp" role="tabpanel" id="p-text" aria-labelledby="t-text">
+<label>Your text
+<textarea id="text">Dear Sam,
+I’m so sorry I missed your call yesterday. I’ll explain everything tomorrow, please don’t be mad!
+– Alex</textarea></label>
+<div class="foot" style="padding:0;border:0"><span class="note" id="wc"></span><button class="btn sm" id="brk" type="button">Insert page break</button></div>
+<p class="note">Text flows onto new pages by itself. A line containing only === also starts a new page.</p>
+</div>
+
+<div class="tp" role="tabpanel" id="p-hand" aria-labelledby="t-hand">
+<div><div class="lbl">Handwriting quality</div><div class="seg" id="seg"><button type="button" data-m="4" data-f="Patrick Hand" data-s="0">Neat</button><button type="button" data-m="38" data-f="Caveat" data-s="12">Casual</button><button type="button" data-m="72" data-f="Reenie Beanie" data-s="16">Ugly</button></div></div>
+<label>Handwriting font
+<select id="font">
+<optgroup label="Neat" id="gneat"><option>Patrick Hand</option><option>Kalam</option><option>Dancing Script</option><option>Homemade Apple</option><option>La Belle Aurore</option><option>Caveat</option></optgroup><optgroup label="Messy" id="gugly"><option selected>Reenie Beanie</option><option>Nanum Pen Script</option><option>Covered By Your Grace</option><option>Rock Salt</option><option>Gochi Hand</option><option>Shadows Into Light</option></optgroup>
+</select></label>
+<label><span>Messiness <b id="vm"></b></span><input id="mess" type="range" min="0" max="100" value="72"></label>
+<label><span>Size <b id="vs"></b></span><input id="size" type="range" min="22" max="60" value="36"></label>
+<label><span>Slant <b id="vl"></b></span><input id="slant" type="range" min="-30" max="40" value="16"></label>
+<div><div class="lbl">Ink</div><div class="inks" id="inks"></div></div>
+</div>
+
+<div class="tp" role="tabpanel" id="p-paper" aria-labelledby="t-paper">
+<select id="paper" hidden><option value="lined">Lined notebook</option><option value="graph">Graph paper</option><option value="dots">Dot grid journal</option><option value="legal">Yellow legal pad</option><option value="index">Index card</option><option value="sticky">Sticky note</option><option value="plain">Plain white</option><option value="parchment">Aged parchment</option><option value="stationery">Elegant stationery</option><option value="rose">Rose letter paper</option><option value="kraft">Kraft paper</option><option value="blueprint">Blueprint</option><option value="chalk">Chalkboard</option></select>
+<div><div class="lbl">Everyday</div><div class="chips" id="ch1"></div></div>
+<div><div class="lbl">Decorative</div><div class="chips" id="ch2"></div></div>
+</div>
+
+<div class="tp" role="tabpanel" id="p-page" aria-labelledby="t-page">
+<label>Trim size
+<select id="trim"><option value="210,297">A4 (210 × 297 mm)</option><option value="148,210">A5 (148 × 210 mm)</option><option value="105,148">A6 (105 × 148 mm)</option><option value="176,250">B5 (176 × 250 mm)</option><option value="215.9,279.4">US Letter (8.5 × 11 in)</option><option value="215.9,355.6">US Legal (8.5 × 14 in)</option><option value="152.4,228.6">Trade paperback (6 × 9 in)</option><option value="101.6,152.4">Index card (4 × 6 in)</option></select></label>
+<label class="chk"><input type="checkbox" id="land"> Landscape</label>
+<div class="two">
+<label><span>Top <b id="vmt"></b></span><input id="mt" type="range" min="0" max="50" value="12"></label>
+<label><span>Bottom <b id="vmb"></b></span><input id="mb" type="range" min="0" max="50" value="14"></label>
+<label><span>Left <b id="vml"></b></span><input id="ml" type="range" min="0" max="60" value="20"></label>
+<label><span>Right <b id="vmr"></b></span><input id="mr" type="range" min="0" max="60" value="11"></label>
+</div>
+<button class="btn" id="adv-reset" type="button">Reset page settings</button>
+</div>
+
+<div class="tp" role="tabpanel" id="p-out" aria-labelledby="t-out">
+<label class="chk"><input type="checkbox" id="grey"> Greyscale (black and white)</label>
+<div class="row"><button class="btn main" id="pdf" type="button">Save PDF</button><button class="btn" id="png" type="button">Save PNG</button></div>
+<p class="note">The PDF uses the trim size from the Page tab. PNG files download as a zip when there is more than one page.</p>
+</div>
+
+<div class="foot"><p class="note" id="status">Re-roll gives a new random scrawl.</p><button class="btn main sm jump" id="jump" type="button">View pages</button></div>
+</div>
+
+<div id="preview">
+<div class="bar"><button class="btn main sm" id="anim" type="button">Animate</button>
+<label>Speed <input id="speed" type="range" min="1" max="10" value="5"><b id="vsp"></b></label>
+<button class="btn sm" id="roll" type="button">Re-roll</button><span class="pc" id="pc"></span></div>
+<div class="stage" id="pages"></div>
+</div>
+</div>
+</div></section>
+
+<section class="sec alt" id="features"><div class="in feat">
+<div><h2>Built to look like a person wrote it</h2><p class="sub">Nothing is a screenshot or a stock image. Every letter is drawn fresh, so no two pages match.</p></div>
+<dl>
+<div><dt>12 handwriting styles</dt><dd>From tidy print to a hurried scrawl, grouped by how neat they are.</dd></div>
+<div><dt>Real irregularity</dt><dd>Each letter gets its own tilt, size and baseline drift. At high messiness, words get crossed out.</dd></div>
+<div><dt>13 kinds of paper</dt><dd>Lined, graph, dot grid, legal pad, index card, sticky note, parchment, stationery, rose, kraft, blueprint and chalkboard.</dd></div>
+<div><dt>Watch it being written</dt><dd>Animate the page with a moving pen dot, at a speed you choose.</dd></div>
+<div><dt>Ready to print</dt><dd>Eight page sizes with adjustable margins. Save as PDF or PNG, in colour or greyscale.</dd></div>
+<div><dt>Stays in your browser</dt><dd>Pages are drawn on your device. Your text is never uploaded.</dd></div>
+</dl>
+</div></section>
+
+<section class="sec" id="how"><div class="in">
+<h2>How it works</h2>
+<ol class="steps">
+<li><b>1</b><h3>Write</h3><p>Type or paste your text in the Text tab. Add page breaks wherever you want them.</p></li>
+<li><b>2</b><h3>Tune</h3><p>Pick a font, ink and paper, then set how messy, large and slanted the writing is.</p></li>
+<li><b>3</b><h3>Save</h3><p>Choose a page size, then save the pages as a PDF or as PNG images.</p></li>
+</ol>
+</div></section>
+
+<section class="sec alt" id="faq"><div class="in">
+<h2>Questions</h2>
+<div class="faq">
+<details><summary>Does my text leave my device?</summary><p>No. The pages are drawn in your browser. Only the fonts and the PDF and zip libraries are loaded from public CDNs.</p></details>
+<details><summary>What does Re-roll do?</summary><p>Every page is drawn from a random seed. Changing settings keeps the same seed, so the writing stays stable while you adjust it. Re-roll picks a new seed for a fresh scrawl.</p></details>
+<details><summary>How do I control page breaks?</summary><p>Text moves to a new page automatically when one fills up. To break earlier, put === alone on a line, or press Insert page break in the Text tab.</p></details>
+<details><summary>Why do fonts look different at the same size?</summary><p>Handwriting fonts vary a lot in letter height. Each font is scaled so that the Size slider feels comparable across them.</p></details>
+<details><summary>I can’t save a file. What now?</summary><p>Saving needs permission from the page you’re viewing it in. If it isn’t available, right-click a page and save it as an image.</p></details>
+</div>
+</div></section>
+</main>
+
+<div class="vsw" id="vsw" hidden><button class="btn" id="vb-set" type="button" aria-pressed="true">Settings</button><button class="btn" id="vb-pre" type="button" aria-pressed="false">Preview</button></div>
+<footer><div class="in"><a class="brand" href="#top">Ugly Handwriting</a><span>Generated handwriting for notes, cards, props and mockups.</span></div></footer>
+
+<script>
+const $=id=>document.getElementById(id);
+const host=$('pages'),mc=document.createElement('canvas').getContext('2d');
+const INKS=[['Blue ballpoint','#1d3f9e'],['Black','#17171c'],['Blue-black','#13224a'],['Red','#b3261e'],['Pencil','#575c63'],['Sepia','#5a3b22'],['Purple','#5b2d8e'],['Green','#1f6b3a'],['White chalk','#f4f4ef']];
+const FK={'Patrick Hand':1.05,'Kalam':0.95,'Dancing Script':1.05,'Homemade Apple':0.85,'La Belle Aurore':1.25,'Reenie Beanie':1.35,'Nanum Pen Script':1.25,'Covered By Your Grace':0.9,'Rock Salt':0.68,'Gochi Hand':0.95,'Shadows Into Light':1,'Caveat':1.05};
+let total=0,raf=0,ink=INKS[0][1],seed=Math.floor(Math.random()*1e9),tok=0,queued=false,st=[],lastP=0;
+const pcs=[],caps=[];
+function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+INKS.forEach(([n,c],i)=>{const b=document.createElement('button');b.style.background=c;b.title=n;b.setAttribute('aria-label',n);b.setAttribute('aria-pressed',i===0);
+b.dataset.c=c;b.onclick=()=>{setInk(c);schedule()};$('inks').appendChild(b)});
+function setInk(c){ink=c;[...$('inks').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.c===c))}
+function decor(c,p,W,H,L,T,lh,k,D){
+const blot=(n,col,r0,r1)=>{for(let i=0;i<n;i++){const x=D()*W,y=D()*H,r=r0+D()*(r1-r0),g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x-r,y-r,2*r,2*r)}};
+const edge=col=>{const g=c.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,H*.78);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,col);c.fillStyle=g;c.fillRect(0,0,W,H)};
+const hl=(y,col)=>{c.strokeStyle=col;c.beginPath();c.moveTo(0,y+.5);c.lineTo(W,y+.5);c.stroke()};
+const fade=(y0,y1,a0,a1)=>{const g=c.createLinearGradient(0,y0,0,y1);g.addColorStop(0,`rgba(0,0,0,${a0})`);g.addColorStop(1,`rgba(0,0,0,${a1})`);c.fillStyle=g;c.fillRect(0,Math.min(y0,y1),W,Math.abs(y1-y0))};
+c.lineWidth=1;
+if(p==='dots'){c.fillStyle='rgba(70,85,100,.5)';for(let y=T%lh;y<H;y+=lh)for(let x=lh/2;x<W;x+=lh){c.beginPath();c.arc(x,y,1.2*k+.3,0,7);c.fill()}}
+else if(p==='index'){for(let y=T;y<H-10;y+=lh)hl(y,'rgba(80,130,210,.4)');c.lineWidth=1.4;hl(T-lh,'rgba(205,60,60,.75)')}
+else if(p==='sticky'){fade(0,H*.12,.09,0);fade(H*.9,H,0,.12)}
+else if(p==='parchment'){blot(16,'rgba(140,95,40,.16)',60,190);blot(8,'rgba(255,246,215,.4)',90,220);edge('rgba(85,45,10,.5)')}
+else if(p==='stationery'){const m=26*k;c.strokeStyle='rgba(166,128,56,.8)';c.lineWidth=1.6;c.strokeRect(m,m,W-2*m,H-2*m);c.lineWidth=.8;c.strokeRect(m+7*k,m+7*k,W-2*m-14*k,H-2*m-14*k);
+for(const [x,y] of [[m,m],[W-m,m],[W-m,H-m],[m,H-m]]){c.lineWidth=1;c.beginPath();c.arc(x,y,11*k,0,7);c.stroke();c.beginPath();c.arc(x,y,5*k,0,7);c.stroke()}}
+else if(p==='rose'){const m=22*k,r=9*k,s=2*r,P=Math.PI;c.strokeStyle='rgba(212,110,145,.6)';c.lineWidth=1.6;
+for(let x=m+r;x<W-m;x+=s){c.beginPath();c.arc(x,m,r,P,0);c.stroke();c.beginPath();c.arc(x,H-m,r,0,P);c.stroke()}
+for(let y=m+r;y<H-m;y+=s){c.beginPath();c.arc(m,y,r,P/2,P*1.5);c.stroke();c.beginPath();c.arc(W-m,y,r,-P/2,P/2);c.stroke()}}
+else if(p==='kraft'){for(let i=0;i<2600;i++){const x=D()*W,y=D()*H,a=D()*6.28,l=5+D()*12;c.strokeStyle=D()<.5?'rgba(90,58,28,.2)':'rgba(255,232,190,.16)';c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);c.stroke()}edge('rgba(60,35,10,.3)')}
+else if(p==='blueprint'){const g=14*k;for(let x=0,i=0;x<W;x+=g,i++){c.strokeStyle=i%5?'rgba(255,255,255,.12)':'rgba(255,255,255,.3)';c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,H);c.stroke()}
+for(let y=0,i=0;y<H;y+=g,i++){c.strokeStyle=i%5?'rgba(255,255,255,.12)':'rgba(255,255,255,.3)';c.beginPath();c.moveTo(0,y+.5);c.lineTo(W,y+.5);c.stroke()}
+c.strokeStyle='rgba(255,255,255,.6)';c.lineWidth=1.5;c.strokeRect(14*k,14*k,W-28*k,H-28*k);edge('rgba(0,10,40,.45)')}
+else if(p==='chalk'){blot(12,'rgba(255,255,255,.06)',90,240);for(let i=0;i<14;i++){const y=D()*H;c.strokeStyle='rgba(255,255,255,.035)';c.lineWidth=10+D()*30;c.beginPath();c.moveTo(0,y);c.quadraticCurveTo(W/2,y+D()*80-40,W,y+D()*60-30);c.stroke()}
+c.strokeStyle='#6b4a2b';c.lineWidth=22*k;c.strokeRect(0,0,W,H);edge('rgba(0,0,0,.35)')}
+}
+function grey(c){const t=document.createElement('canvas');t.width=c.width;t.height=c.height;const x=t.getContext('2d');x.drawImage(c,0,0);const d=x.getImageData(0,0,t.width,t.height),a=d.data;
+for(let i=0;i<a.length;i+=4){const g=a[i]*.299+a[i+1]*.587+a[i+2]*.114;a[i]=a[i+1]=a[i+2]=g}x.putImageData(d,0,0);return t}
+function sync(n){
+while(pcs.length<n){const c=document.createElement('canvas'),d=document.createElement('div');d.className='cap';c.setAttribute('aria-label','Handwritten page '+(pcs.length+1));host.append(c,d);pcs.push(c);caps.push(d)}
+while(pcs.length>n){pcs.pop().remove();caps.pop().remove()}
+caps.forEach((d,i)=>d.textContent='Page '+(i+1)+' of '+n);$('pc').textContent=n+(n===1?' page':' pages')}
+async function render(lim=Infinity){
+const my=++tok;
+const [tw,th]=$('trim').value.split(',').map(Number),ld=$('land').checked,pw=ld?th:tw,ph=ld?tw:th,k=210/pw,pxmm=900/pw;
+const font=$('font').value,mess=+$('mess').value/100,size=+$('size').value*FK[font]*k,slant=+$('slant').value/100,paper=$('paper').value,text=$('text').value;
+$('vm').textContent=$('mess').value+'%';$('vs').textContent=$('size').value;$('vl').textContent=$('slant').value;
+['mt','mb','ml','mr'].forEach(q=>$('v'+q).textContent=$(q).value+' mm');
+const spec=`${size}px "${font}", cursive`;
+try{await document.fonts.load(spec,text||'a')}catch(e){}
+if(my!==tok)return;
+if(lim===Infinity||lim===0){st=[];lastP=0}
+const R=rng(seed),rr=()=>R()*2-1,W=900,H=Math.round(900*ph/pw),S=2,G=28*k;
+const lineH=paper==='graph'?Math.max(G,Math.round(size*1.3/G)*G):Math.max(36*k,Math.round(size*1.25));
+const mmv=q=>+$(q).value*pxmm,left=mmv('ml'),right=mmv('mr'),bot=mmv('mb'),top=mmv('mt')+lineH*0.6,maxW=Math.max(size*2,W-left-right),space=size*0.3;
+mc.font=spec;
+const ww=w=>mc.measureText(w).width*(1+mess*0.05);
+const lines=[];
+text.split('\n').forEach(p=>{
+if(p.trim()==='==='){lines.push('PB');return}
+if(!p.trim()){lines.push([]);return}
+let cur=[],cw=0;p.split(/\s+/).filter(Boolean).forEach(w=>{const a=ww(w);
+if(cur.length&&cw+space+a>maxW){lines.push(cur);cur=[];cw=0}
+cur.push(w);cw+=(cur.length>1?space:0)+a});lines.push(cur)});
+const per=Math.max(1,Math.floor((H-bot-top)/lineH)+1),pages=[[]];
+lines.forEach(l=>{if(l==='PB'){pages.push([]);return}
+if(pages[pages.length-1].length>=per)pages.push([]);pages[pages.length-1].push(l)});
+while(pages.length>1&&!pages[pages.length-1].length)pages.pop();
+sync(pages.length);
+let ctx,on=true,cnt=0,lx=left,ly=top,lp=0,pi=0;
+const pencil=ink==='#575c63';
+function word(w,x,y,ang){
+for(const ch of w){
+const m=mc.measureText(ch).width,s=1+rr()*mess*0.2;
+ctx.save();ctx.translate(x,y+rr()*mess*size*0.1+(x-left)*ang);
+ctx.rotate(rr()*mess*0.16+ang);ctx.transform(1,0,-slant,1,0,0);ctx.scale(s,s*(1+rr()*mess*0.08));
+ctx.font=spec;ctx.fillStyle=ink;ctx.globalAlpha=(pencil?0.7:0.82)+R()*0.18;
+ctx.shadowColor=ink;ctx.shadowBlur=pencil?1.2:0.7;
+const d=cnt++<lim;
+if(d){const t=ctx.getTransform();lx=t.e/S;ly=t.f/S;lp=pi;if(on)ctx.fillText(ch,0,0)}
+ctx.restore();
+x+=m*s*(1+mess*0.05)+rr()*mess*size*0.05}
+return x}
+function strike(x0,x1,y){const d=cnt++<lim&&on;ctx.save();ctx.strokeStyle=ink;ctx.globalAlpha=.85;ctx.lineWidth=1.4+R();
+for(let k=0;k<2;k++){ctx.beginPath();ctx.moveTo(x0-3,y-size*.3+rr()*4);
+for(let t=1;t<=4;t++)ctx.lineTo(x0+(x1-x0)*t/4,y-size*.3+rr()*size*.12);if(d)ctx.stroke()}ctx.restore()}
+pages.forEach((pl,idx)=>{
+pi=idx;const cv=pcs[idx],start=cnt;
+on=st[idx]!==2&&!(st[idx]===1&&start>lim);
+ctx=cv.getContext('2d');
+if(on){cv.width=W*S;cv.height=H*S;ctx.setTransform(S,0,0,S,0,0);
+ctx.fillStyle={lined:'#f6f6f2',graph:'#f7f8f6',legal:'#f2e8a6',plain:'#fbfbf9',dots:'#f8f7f2',index:'#fdfdfb',sticky:'#fff27a',parchment:'#e9d7a6',stationery:'#fbf8ef',rose:'#fbe9ee',kraft:'#c9a678',blueprint:'#1f4e8c',chalk:'#26332e'}[paper];ctx.fillRect(0,0,W,H);decor(ctx,paper,W,H,left,top,lineH,k,rng(seed+idx*7919));
+if(paper==='lined'||paper==='legal'){ctx.strokeStyle=paper==='legal'?'rgba(70,90,140,.4)':'rgba(70,110,200,.42)';ctx.lineWidth=1;
+for(let y=top;y<H-20;y+=lineH){ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W,y+.5);ctx.stroke()}
+ctx.strokeStyle='rgba(200,60,60,.5)';const mx=Math.max(4,left-14*k)+.5;ctx.beginPath();ctx.moveTo(mx,0);ctx.lineTo(mx,H);ctx.stroke()}
+if(paper==='graph'){ctx.strokeStyle='rgba(70,130,170,.3)';ctx.lineWidth=1;
+for(let x=0;x<W;x+=G){ctx.beginPath();ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,H);ctx.stroke()}
+for(let y=top%G;y<H;y+=G){ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(W,y+.5);ctx.stroke()}}}
+for(let i=0;i<W*H/110;i++){const a=R()*0.06,x=R()*W,y=R()*H,w=1+R(),h=1+R();
+if(on){ctx.fillStyle=`rgba(60,50,30,${a})`;ctx.fillRect(x,y,w,h)}}
+if(on){const vg=ctx.createRadialGradient(W/2,H/2,H*.35,W/2,H/2,H*.75);
+vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(40,30,10,.12)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H)}
+pl.forEach((ln,i)=>{
+let x=left+rr()*mess*10,y=top+i*lineH-2+rr()*mess*2;const ang=rr()*mess*0.03;
+ln.forEach(w=>{const a=ww(w);
+if(w.length>2&&R()<mess*0.07&&x+2*a+space<W-right){const x1=word(w,x,y,ang);strike(x,x1,y);x=x1+space*(0.8+R()*0.5)}
+x=word(w,x,y,ang)+space*(0.75+R()*0.6+mess*0.3*R())})});
+if(on)st[idx]=cnt<lim?2:(start>lim?1:0)});
+total=cnt;
+if(lim!==Infinity&&lim<cnt){const c=pcs[lp].getContext('2d');c.save();c.setTransform(S,0,0,S,0,0);c.fillStyle=ink;c.beginPath();c.arc(lx,ly,2.6,0,7);c.fill();c.restore();
+if(lim>0&&lp!==lastP){lastP=lp;pcs[lp].scrollIntoView({block:'nearest',behavior:'smooth'})}}
+}
+function schedule(){if(raf)stopAnim();if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render()})}
+['text','font','mess','size','slant','paper','trim','land','mt','mb','ml','mr'].forEach(id=>$(id).addEventListener('input',schedule));
+$('paper').addEventListener('input',()=>{const p=$('paper').value,w='#f4f4ef';if(p==='chalk'||p==='blueprint')setInk(w);else if(ink===w)setInk(INKS[0][1])});
+$('mess').addEventListener('input',segSync);
+function segSync(){[...$('seg').children].forEach(b=>b.setAttribute('aria-pressed',+b.dataset.m===+$('mess').value))}
+[...$('seg').children].forEach(b=>b.onclick=()=>{$('mess').value=b.dataset.m;$('font').value=b.dataset.f;$('slant').value=b.dataset.s;segSync();schedule()});
+segSync();
+$('adv-reset').onclick=()=>{$('trim').value='210,297';$('land').checked=false;$('mt').value=12;$('mb').value=14;$('ml').value=20;$('mr').value=11;schedule()};
+$('roll').onclick=()=>{stopAnim();seed=Math.floor(Math.random()*1e9);render()};
+function stopAnim(){cancelAnimationFrame(raf);raf=0;$('anim').textContent='Animate'}
+const cps=()=>+$('speed').value*14;
+$('speed').addEventListener('input',()=>{$('vsp').textContent=$('speed').value+'\u00d7'});
+$('vsp').textContent=$('speed').value+'\u00d7';
+$('anim').onclick=async()=>{
+if(raf){stopAnim();render();return}
+raf=1;$('anim').textContent='Stop';
+await render(0);
+if(!raf)return;
+pcs[0].scrollIntoView({block:'nearest'});
+const t0=performance.now();
+const step=async now=>{const n=Math.floor((now-t0)*cps()/1000);
+if(n>=total){stopAnim();render();return}
+await render(n);if(raf)raf=requestAnimationFrame(step)};
+raf=requestAnimationFrame(step)};
+const NOSAVE='Saving isn’t available in this view. Right-click a page to save it as an image.';
+async function saveFile(name,blob){
+const dl=window.claude?await window.claude.use('downloads'):null;
+if(dl){await dl.save({filename:name,data:blob});return true}
+if(window.claude)return false;
+const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);return true}
+$('pdf').onclick=async()=>{
+const msg=$('status'),btn=$('pdf');
+if(!window.jspdf){msg.textContent='The PDF library did not load. Check your connection and reload the page.';return}
+btn.disabled=true;msg.textContent='Building PDF…';
+try{
+stopAnim();await render();
+const [tw,th]=$('trim').value.split(',').map(Number),ld=$('land').checked,pw=ld?th:tw,ph=ld?tw:th;
+const pdf=new window.jspdf.jsPDF({orientation:ld?'l':'p',unit:'mm',format:[pw,ph],compress:true});
+pcs.forEach((c0,i)=>{const c=$('grey').checked?grey(c0):c0;if(i)pdf.addPage();pdf.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',0,0,pw,ph)});
+if(!await saveFile('handwriting.pdf',pdf.output('blob'))){msg.textContent=NOSAVE;return}
+msg.textContent='PDF saved ('+pcs.length+(pcs.length===1?' page).':' pages).')}
+catch(e){msg.textContent=e&&e.code==='declined'?'Save cancelled.':'Could not save the PDF'+(e&&e.message?': '+e.message:'.')}
+finally{btn.disabled=false}};
+$('png').onclick=async()=>{
+const msg=$('status'),btn=$('png');
+btn.disabled=true;msg.textContent='Preparing images…';
+try{
+stopAnim();await render();
+const blobs=await Promise.all(pcs.map(c0=>new Promise(r=>($('grey').checked?grey(c0):c0).toBlob(r,'image/png'))));
+let ok;
+if(blobs.length===1)ok=await saveFile('handwriting.png',blobs[0]);
+else{if(!window.JSZip){msg.textContent='The zip library did not load. Reload the page and try again.';return}
+const z=new JSZip();blobs.forEach((b,i)=>z.file('handwriting-page-'+(i+1)+'.png',b));
+ok=await saveFile('handwriting-pages.zip',await z.generateAsync({type:'blob'}))}
+if(!ok){msg.textContent=NOSAVE;return}
+msg.textContent='Saved.'}
+catch(e){msg.textContent=e&&e.code==='declined'?'Save cancelled.':'Could not save the images'+(e&&e.message?': '+e.message:'.')}
+finally{btn.disabled=false}};
+render();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(schedule);
+</script>
+<script>
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function pick(t,f){tabs.forEach(b=>{const on=b===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;$(b.getAttribute('aria-controls')).hidden=!on});if(f)t.focus()}
+tabs.forEach((b,i)=>{b.onclick=()=>pick(b);b.onkeydown=e=>{const d={ArrowRight:1,ArrowLeft:-1}[e.key];if(d){e.preventDefault();pick(tabs[(i+d+tabs.length)%tabs.length],1)}}});
+pick(tabs[0]);
+const PP=[['lined','Lined notebook','#f6f6f2'],['graph','Graph paper','#f7f8f6'],['dots','Dot grid','#f8f7f2'],['legal','Legal pad','#f2e8a6'],['index','Index card','#fdfdfb'],['sticky','Sticky note','#fff27a'],['plain','Plain white','#fbfbf9'],['parchment','Parchment','#e9d7a6'],['stationery','Stationery','#fbf8ef'],['rose','Rose letter','#fbe9ee'],['kraft','Kraft paper','#c9a678'],['blueprint','Blueprint','#1f4e8c'],['chalk','Chalkboard','#26332e']];
+const chips=[];
+PP.forEach(([v,n,c],i)=>{const b=document.createElement('button');b.type='button';b.className='chip';b.innerHTML='<i style="background:'+c+'"></i>'+n;
+b.onclick=()=>{$('paper').value=v;$('paper').dispatchEvent(new Event('input'));mark()};chips.push([v,b]);$(i<7?'ch1':'ch2').appendChild(b)});
+function mark(){chips.forEach(([v,b])=>b.setAttribute('aria-pressed',v===$('paper').value))}mark();
+const wc=()=>{const n=($('text').value.match(/\S+/g)||[]).filter(w=>w!=='===').length;$('wc').textContent=n+(n===1?' word':' words')};
+$('text').addEventListener('input',wc);wc();
+$('brk').onclick=()=>{const t=$('text'),s=t.selectionStart,pre=t.value.slice(0,s);t.setRangeText((pre&&!pre.endsWith('\n')?'\n':'')+'===\n',s,t.selectionEnd,'end');t.focus();t.dispatchEvent(new Event('input'))};
+function view(v){$('sg').dataset.view=v;$('vb-set').setAttribute('aria-pressed',v==='settings');$('vb-pre').setAttribute('aria-pressed',v==='preview');if(matchMedia('(max-width:960px)').matches)$('sg').scrollIntoView()}
+$('vb-set').onclick=()=>view('settings');$('vb-pre').onclick=()=>view('preview');$('jump').onclick=()=>view('preview');
+if('IntersectionObserver' in window)new IntersectionObserver(e=>{$('vsw').hidden=!e[0].isIntersecting}).observe($('studio'));else $('vsw').hidden=false;
+$('theme').onclick=()=>{const r=document.documentElement,d=matchMedia('(prefers-color-scheme: dark)').matches,c=r.dataset.theme||(d?'dark':'light');r.dataset.theme=c==='dark'?'light':'dark'};
+</script>
+</body>
+</html>
